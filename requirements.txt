@@ -1,0 +1,1 @@
+# No external runtime dependencies needed; Tkinter is included with standard Python on Windows
