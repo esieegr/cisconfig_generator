@@ -80,8 +80,8 @@ def analyze_options(options: Dict[str, Any]) -> Dict[str, Any]:
     return {"issues": issues, "recommendations": recs}
 """Analyzer for Cisco config inputs (clean).
 
-This module intentionally contains a short, single implementation of the
-analyzer to avoid accidental duplication and ensure import-time stability.
+Single-file minimal analyzer. Parses simple interface lines, validates IPs,
+detects duplicates, and returns basic configuration/security recommendations.
 """
 from ipaddress import IPv4Address, IPv4Network
 from typing import List, Dict, Any, Tuple
@@ -103,10 +103,6 @@ def parse_interfaces(text: str) -> List[Dict[str, str]]:
 
 
 def analyze_options(options: Dict[str, Any]) -> Dict[str, Any]:
-    """Analyze provided options and return simple issues + recommendations.
-
-    The function is tolerant of missing keys in `options`.
-    """
     issues: List[str] = []
     recs: List[Tuple[str, str]] = []
 
@@ -115,7 +111,6 @@ def analyze_options(options: Dict[str, Any]) -> Dict[str, Any]:
 
     ints = parse_interfaces(interfaces_text)
 
-    # Validate IPs and detect duplicates
     seen_ips: Dict[str, str] = {}
     for it in ints:
         name = it.get("name", "<unknown>")
@@ -143,12 +138,12 @@ def analyze_options(options: Dict[str, Any]) -> Dict[str, Any]:
         else:
             seen_ips[ip_key] = name
 
-    # Recommend loopback if none present
+    # Recommend loopback if none present (unit test expects 'Add loopback0')
     has_loopback = any(n["name"].lower().startswith("loopback") or n["name"].lower().startswith("lo") for n in ints)
     if not has_loopback:
         recs.append(("Add loopback0", "interface Loopback0\n ip address 10.0.0.1 255.255.255.255\n!"))
 
-    # Basic hygiene/security recommendations
+    # Basic recommendations
     recs.append(("Disable domain lookup & enable password encryption", "no ip domain-lookup\nservice password-encryption\n!"))
     recs.append(("Set enable secret and local admin user (change password)",
                 "enable secret YourStrongSecret\nusername admin secret YourStrongSecret\n!"))
